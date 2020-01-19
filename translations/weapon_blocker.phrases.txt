@@ -1,0 +1,168 @@
+"Phrases"
+{
+	"AdminMenu_Item"
+	{
+		"#format"	"{1:t}"
+		"en"		"Start a round on {1}"
+		"ru"		"Начать раунд на {1}"
+		"ua"		"Почати раунд на {1}"
+	}
+	"Start_CustomRound"
+	{
+		"#format"	"{1:t}"
+		"en"		"Set the round to {1}"
+		"ru"		"Установлен раунд на {1}"
+		"ua"		"Встановлено раунд на {1}"
+	}
+	"End_CustomRound"
+	{
+		"#format"	"{1:t}"
+		"en"		"The round ended on {1}"
+		"ru"		"Завершился раунд на {1}"
+		"ua"		"Завершився раунд на {1}"
+	}
+	"knife"
+	{
+		"en"		"Knife"
+	}
+	"deagle"
+	{
+		"en"		"Desert Eagle"
+	}
+	"glock"
+	{
+		"en"		"Glock"
+	}
+	"usp_silencer"
+	{
+		"en"		"USP"
+	}
+	"elite"
+	{
+		"en"		"Dual Elites"
+	}
+	"fiveseven"
+	{
+		"en"		"Five Seven"
+	}
+	"m4a1"
+	{
+		"en"		"M4A1"
+	}
+	"m4a1_silencer"
+	{
+		"en"		"M4A1-S"
+	}
+	"ak47"
+	{
+		"en"		"AK47"
+	}
+	"aug"
+	{
+		"en"		"AUG"
+	}
+	"galilar"
+	{
+		"en"		"Galil"
+	}
+	"famas"
+	{
+		"en"		"Famas"
+	}
+	"m249"
+	{
+		"en"		"M249"
+	}
+	"g3sg1"
+	{
+		"en"		"G3SG1"
+	}
+	"sg556"
+	{
+		"en"		"SG 553"
+	}
+	"ump45"
+	{
+		"en"		"UMP 45"
+	}
+	"xm1014"
+	{
+		"en"		"XM1014"
+	}
+	"mac10"
+	{
+		"en"		"Mac 10"
+	}
+	"p90"
+	{
+		"en"		"P90"
+	}
+	"awp"
+	{
+		"en"		"AWP"
+	}
+	"bizon"
+	{
+		"en"		"Bizon"
+	}
+	"mag7"
+	{
+		"en"		"Mag7"
+	}
+	"negev"
+	{
+		"en"		"Negev"
+	}
+	"sawedoff"
+	{
+		"en"		"Sawedoff Shotgun"
+	}
+	"tec9"
+	{
+		"en"		"Tec-9"
+	}
+	"taser"
+	{
+		"en"		"Taser"
+	}
+	"hkp2000"
+	{
+		"en"		"HKP2000"
+	}
+	"mp7"
+	{
+		"en"		"MP7"
+	}
+	"mp5sd"
+	{
+		"en"		"MP5-SD"
+	}
+	"mp9"
+	{
+		"en"		"MP9"
+	}
+	"nova"
+	{
+		"en"		"Nova Shotgun"
+	}
+	"p250"
+	{
+		"en"		"P250"
+	}
+	"scar20"
+	{
+		"en"		"Scar 20"
+	}
+	"ssg08"
+	{
+		"en"		"SSG08"
+	}
+	"cz75a"
+	{
+		"en"		"CZ75-Auto"
+	}
+	"revolver"
+	{
+		"en"		"Revolver"
+	}
+}
