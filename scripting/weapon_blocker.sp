@@ -13,6 +13,12 @@
 #pragma newdecls required
 #pragma tabsize 4
 
+#define SPPP_COMPILER 0
+
+#if !SPPP_COMPILER
+	#define decl static
+#endif
+
 enum struct WeaponData
 {
 	bool Block;
@@ -34,23 +40,25 @@ CSWeaponID		g_iCustomRound;
 
 ConVar			g_hItemsProhibited;
 
-GlobalForward	g_hWB_WeaponDataUpdate, g_hWB_OnSettingsIsLoaded, g_hWB_OnCustomRoundStart;
+GlobalForward	g_hWB_WeaponDataUpdate, g_hWB_OnLoadSettings, g_hWB_OnSettingsIsLoaded, g_hWB_OnCustomRoundStart;
 
-KeyValues		g_hKv;
+KeyValues		g_hKV;
 
 TopMenu			g_hAdminMenu;
 
 // weapon_blocker.sp
+// SourcePawn Compiler 1.10 Ex
 public Plugin myinfo =
 {
 	name = "[Weapon Blocker] Core",
 	author = "Wend4r",
-	version = "1.0 Alpha"
+	version = "1.0.1 Alpha"
 };
 
 public APLRes AskPluginLoad2(Handle hMySelf, bool bLate, char[] sError, int iErrLen)
 {
 	g_hWB_WeaponDataUpdate = new GlobalForward("WB_WeaponDataUpdate", ET_Ignore, Param_Cell, Param_Cell);
+	g_hWB_OnLoadSettings = new GlobalForward("WB_OnLoadSettings", ET_Ignore, Param_Cell);
 	g_hWB_OnSettingsIsLoaded = new GlobalForward("WB_OnSettingsIsLoaded", ET_Ignore, Param_Cell);
 	g_hWB_OnCustomRoundStart = new GlobalForward("WB_OnCustomRoundStart", ET_Ignore, Param_Cell);
 
@@ -119,42 +127,6 @@ int WB_SetWeaponData(Handle hPlugin, int iArgs)
 	{
 		case 0:	// WeaponData.Block
 		{
-			static char sValue[256],
-						sReplace[16];
-
-			g_hItemsProhibited.GetString(sValue, sizeof(sValue));
-
-			int iDefIndex = CS_WeaponIDToItemDefIndex(iWeaponID);
-
-			IntToString(iDefIndex, sReplace, sizeof(sReplace));
-
-			int iLen = StrContains(sValue, sReplace, false);
-
-			if(iValue)
-			{
-				if(iLen > 0 || !sValue[0])
-				{
-					Format(sValue, sizeof(sValue), "%s,%i", sValue, iDefIndex);
-				}
-				else
-				{
-					IntToString(iDefIndex, sValue, sizeof(sValue));
-				}
-			}
-			else
-			{
-				if(iLen != -1)
-				{
-					if(iLen)
-					{
-						Format(sReplace, sizeof(sReplace), ",%s", sReplace);
-					}
-
-					ReplaceString(sValue[iLen], sizeof(sValue) - iLen, sReplace, NULL_STRING);
-				}
-			}
-
-			g_hItemsProhibited.SetString(sValue);
 			g_iWeaponData[iWeaponID].Block = iValue != 0;
 		}
 
@@ -221,7 +193,7 @@ int WB_SetCustomRound(Handle hPlugin, int iArgs)
 {
 	if(GetNativeCell(2))
 	{
-		static char sAlias[64];
+		decl char sAlias[64];
 
 		CS_WeaponIDToAlias(GetNativeCell(1), sAlias, sizeof(sAlias));
 
@@ -277,7 +249,7 @@ public void OnAdminMenuReady(Handle hMenu)
 
 		if(iCategory)
 		{
-			static char sCmdName[76] = "sm_wb_start_";
+			decl char sCmdName[76] = "sm_wb_start_";
 
 			for(CSWeaponID i = CSWeapon_MAX_WEAPONS_NO_KNIFES; --i;)
 			{
@@ -293,7 +265,7 @@ public void OnAdminMenuReady(Handle hMenu)
 
 void Handler_AdminStart(TopMenu hMenu, TopMenuAction iAction, TopMenuObject iObjectId, int iClient, char[] sBuffer, int iMaxLength)
 {
-	static char sItem[72];
+	decl char sItem[72];
 
 	if(iAction == TopMenuAction_DrawOption && g_iCustomRound)
 	{
@@ -343,10 +315,10 @@ public void OnMapStart()
 	}
 	else
 	{
-		g_hKv.Close();
+		g_hKV.Close();
 	}
 
-	if(!(g_hKv = new KeyValues("Weapon Blocker")).ImportFromFile(sPath))
+	if(!(g_hKV = new KeyValues("Weapon Blocker")).ImportFromFile(sPath))
 	{
 		SetFailState("%s - is not found", sPath);
 	}
@@ -384,12 +356,11 @@ public void OnClientDisconnect(int iClient)
 
 void OnWeaponSpawnPost(int iEntity)
 {
-	RequestFrame(OnWeaponSpawnPostPost, iEntity);
-
+	CreateTimer(0.1, OnWeaponSpawnPostPost, iEntity);
 	SDKUnhook(iEntity, SDKHook_SpawnPost, OnWeaponSpawnPost);
 }
 
-void OnWeaponSpawnPostPost(int iEntity)
+Action OnWeaponSpawnPostPost(Handle hTimer, int iEntity)
 {
 	if(IsValidEntity(iEntity))
 	{
@@ -441,13 +412,20 @@ Action OnWeaponCanUse(int iClient, int iEntity)
 
 void OnRoundStartPre(Event hEvent, const char[] sName, bool bDontBroadcast)
 {
-	bool bIsThisMap = false;
+	bool bIsThisMap = false, bIsWarmup = GameRules_GetProp("m_bWarmupPeriod", 1) != 0;
 
 	int iPlayerCount = 0;
 
 	char sBuffer[256];
 
 	CSWeaponID iWeaponID = CSWeapon_MAX_WEAPONS_NO_KNIFES;
+
+	g_hKV.Rewind();
+	g_hKV.GotoFirstSubKey();
+
+	Call_StartForward(g_hWB_OnLoadSettings);
+	Call_PushCell(g_hKV);
+	Call_Finish();
 
 	while(--iWeaponID)
 	{
@@ -470,14 +448,11 @@ void OnRoundStartPre(Event hEvent, const char[] sName, bool bDontBroadcast)
 		}
 	}
 
-	g_hKv.Rewind();
-	g_hKv.GotoFirstSubKey();
-
 	do
 	{
 		bIsThisMap = false;
 
-		g_hKv.GetSectionName(sBuffer, 64);
+		g_hKV.GetSectionName(sBuffer, 64);
 
 		if(!strcmp(sBuffer, "all"))
 		{
@@ -509,37 +484,37 @@ void OnRoundStartPre(Event hEvent, const char[] sName, bool bDontBroadcast)
 
 		if(bIsThisMap)
 		{
-			g_hKv.GotoFirstSubKey();
+			g_hKV.GotoFirstSubKey();
 
 			do
 			{
-				g_hKv.GetSectionName(sBuffer, 12);
+				g_hKV.GetSectionName(sBuffer, 12);
 
-				if(StringToInt(sBuffer) <= iPlayerCount && g_hKv.GotoFirstSubKey())
+				if(StringToInt(sBuffer) <= iPlayerCount && g_hKV.GotoFirstSubKey())
 				{
 					do
 					{
-						g_hKv.GetSectionName(sBuffer, 64);
+						g_hKV.GetSectionName(sBuffer, 64);
 
 						if(CSWeapon_NONE < (iWeaponID = CS_AliasToWeaponID(sBuffer)) < CSWeapon_MAX_WEAPONS_NO_KNIFES)
 						{
 							if(!g_iCustomRound)
 							{
-								g_iWeaponData[iWeaponID].Block = g_hKv.GetNum("block", 0) != 0;
-								g_iWeaponData[iWeaponID].ClipCount = g_hKv.GetNum("clip_count", -1);
-								g_iWeaponData[iWeaponID].AmmoCount = g_hKv.GetNum("ammo_count", -1);
+								g_iWeaponData[iWeaponID].Block = (bIsWarmup ? g_hKV.GetNum("block_in_warmup", 0) : g_hKV.GetNum("block", 0)) != 0;
+								g_iWeaponData[iWeaponID].ClipCount = g_hKV.GetNum("clip_count", -1);
+								g_iWeaponData[iWeaponID].AmmoCount = g_hKV.GetNum("ammo_count", -1);
 							}
 
-							g_hKv.GetString("access_flags", sBuffer, 32);
+							g_hKV.GetString("access_flags", sBuffer, 32);
 							g_iWeaponData[iWeaponID].AccessFlags = ReadFlagString(sBuffer);
 
-							g_hKv.GetString("round_flags", sBuffer, 32);
+							g_hKV.GetString("round_flags", sBuffer, 32);
 							g_iWeaponData[iWeaponID].RoundFlags = ReadFlagString(sBuffer);
 
-							g_iWeaponData[iWeaponID].RoundIsKnife = g_hKv.GetNum("round_is_knife", -1) != 0;
+							g_iWeaponData[iWeaponID].RoundIsKnife = g_hKV.GetNum("round_is_knife", -1) != 0;
 
 							Call_StartForward(g_hWB_WeaponDataUpdate);
-							Call_PushCell(g_hKv);
+							Call_PushCell(g_hKV);
 							Call_PushCell(iWeaponID);
 							Call_Finish();
 						}
@@ -548,19 +523,23 @@ void OnRoundStartPre(Event hEvent, const char[] sName, bool bDontBroadcast)
 							LogError("%s - weapon is not found", sBuffer);
 						}
 					}
-					while g_hKv.GotoNextKey();
+					while g_hKV.GotoNextKey();
 
-					g_hKv.GoBack();
+					g_hKV.GoBack();
 				}
 			}
-			while g_hKv.GotoNextKey();
+			while g_hKV.GotoNextKey();
 
-			g_hKv.GoBack();
+			g_hKV.GoBack();
 		}
 	}
-	while g_hKv.GotoNextKey();
+	while g_hKV.GotoNextKey();
 
 	sBuffer[0] = '\0';
+
+	Call_StartForward(g_hWB_OnSettingsIsLoaded);
+	Call_PushCell(g_hKV);
+	Call_Finish();
 
 	for(CSWeaponID i = CSWeapon_MAX_WEAPONS_NO_KNIFES; --i;)
 	{
@@ -582,10 +561,6 @@ void OnRoundStartPre(Event hEvent, const char[] sName, bool bDontBroadcast)
 
 	g_hItemsProhibited.SetString(sBuffer);
 
-	Call_StartForward(g_hWB_OnSettingsIsLoaded);
-	Call_PushCell(g_hKv);
-	Call_Finish();
-
 	if(g_hAdminMenu)
 	{
 		OnAdminMenuReady(g_hAdminMenu);
@@ -606,7 +581,9 @@ void OnRoundStart(Event hEvent, const char[] sName, bool bDontBroadcast)
 	{
 		if(IsClientInGame(i))
 		{
-			for(int i2 = 68, iEnt; i2 -= 4;)
+			decl int iEnt;
+
+			for(int i2 = 68; i2 -= 4;)
 			{
 				if((iEnt = GetEntDataEnt2(i, m_hMyWeapons + i2)) != -1)
 				{
@@ -632,7 +609,7 @@ void OnRoundStart(Event hEvent, const char[] sName, bool bDontBroadcast)
 
 void OnRoundEnd(Event hEvent, const char[] sName, bool bDontBroadcast)
 {
-	static char sAlias[64];
+	decl char sAlias[64];
 
 	UnhookEvent("round_end", OnRoundEnd);
 
@@ -644,7 +621,7 @@ void OnRoundEnd(Event hEvent, const char[] sName, bool bDontBroadcast)
 
 void GetCurrentMapEx(char[] sMapBuffer, int iSize)
 {
-	static char sBuffer[256];
+	decl char sBuffer[256];
 
 	GetCurrentMap(sBuffer, sizeof(sBuffer));
 
@@ -693,7 +670,9 @@ int GetWeaponOwner(const int& iEntity)
 
 bool IsPlayerHasWeapon(const int& iClient, const int& iDefIndex)
 {
-	for(int i = 68, iEnt; i -= 4;)
+	decl int iEnt;
+
+	for(int i = 68; i -= 4;)
 	{
 		if((iEnt = GetEntDataEnt2(iClient, m_hMyWeapons + i)) != -1 && iDefIndex == GetEntData(iEnt, m_iItemDefinitionIndex))
 		{

@@ -24,14 +24,21 @@ enum WB_ParamType
 forward void WB_OnGetWeaponData(KeyValues hKv, CSWeaponID iWeaponID);
 
 /**
- * Сalled when the settings have been loaded.
+ * Called before load settings.
  *
- * @param CSWeaponID		WeaponID on which the custom round will be played.
+ * @param KeyValues		Full config tree.
+ */
+forward void WB_OnLoadSettings(KeyValues hKv);
+
+/**
+ * Called when the settings have been loaded.
+ *
+ * @param KeyValues			Full config tree.
  */
 forward void WB_OnSettingsIsLoaded(KeyValues hKv);
 
 /**
- * Сalled when the custom round starts.
+ * Called when the custom round starts.
  */
 forward void WB_OnCustomRoundStart();
 

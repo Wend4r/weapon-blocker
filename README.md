@@ -1,4 +1,4 @@
-[Weapon Blocker] Core 1.0 Alpha
+[Weapon Blocker] Core 1.0.1 Alpha
 ===========================
 
 Supported games:
